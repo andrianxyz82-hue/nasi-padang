@@ -9,13 +9,14 @@ android {
     compileSdk = flutter.compileSdkVersion
 
     compileOptions {
-        coreLibraryDesugaringEnabled true
+        // enable desugaring (Kotlin DSL syntax)
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -27,14 +28,14 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
 }
 
 dependencies {
-    // Paste dependency-nya DI SINI
+    // Kotlin DSL format for desugaring
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
