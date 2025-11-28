@@ -35,8 +35,8 @@ android {
 }
 
 dependencies {
-    // Kotlin DSL format for desugaring
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    // updated to min required version for flutter_local_notifications
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 
 flutter {
