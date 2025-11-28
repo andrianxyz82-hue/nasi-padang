@@ -6,7 +6,8 @@ import '../../services/course_service.dart';
 import 'add_questions_screen.dart';
 
 class CreateExamScreen extends StatefulWidget {
-  const CreateExamScreen({super.key});
+  final Map<String, dynamic>? exam;
+  const CreateExamScreen({super.key, this.exam});
 
   @override
   State<CreateExamScreen> createState() => _CreateExamScreenState();
@@ -33,6 +34,17 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
   void initState() {
     super.initState();
     _loadCourses();
+    if (widget.exam != null) {
+      _titleController.text = widget.exam!['title'];
+      _descriptionController.text = widget.exam!['description'] ?? '';
+      _durationController.text = widget.exam!['duration_minutes'].toString();
+      _passingScoreController.text = widget.exam!['passing_score'].toString();
+      _selectedCourseId = widget.exam!['course_id'];
+      _lockMode = widget.exam!['is_lock_mode'] ?? true;
+      if (widget.exam!['expires_at'] != null) {
+        _expirationDate = DateTime.parse(widget.exam!['expires_at']);
+      }
+    }
   }
 
   Future<void> _loadCourses() async {
@@ -56,7 +68,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     super.dispose();
   }
 
-  Future<void> _createExam() async {
+  Future<void> _saveExam() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedCourseId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -68,7 +80,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
     setState(() => _loading = true);
 
     try {
-      final examId = await _examService.createExam({
+      final examData = {
         'title': _titleController.text.trim(),
         'description': _descriptionController.text.trim(),
         'course_id': _selectedCourseId,
@@ -76,19 +88,35 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
         'passing_score': int.parse(_passingScoreController.text),
         'expires_at': _expirationDate?.toIso8601String(),
         'is_lock_mode': _lockMode,
-        'total_questions': 0, // Will be updated when questions are added
-      });
+      };
 
-      if (examId != null && mounted) {
-        // Navigate to add questions screen
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => AddQuestionsScreen(examId: examId),
-          ),
-        ).then((_) => context.pop());
-      } else if (mounted) {
-        throw Exception('Failed to create exam');
+      if (widget.exam != null) {
+        // Update existing exam
+        final success = await _examService.updateExam(widget.exam!['id'], examData);
+        if (success && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Exam updated successfully')),
+          );
+          Navigator.pop(context);
+        } else {
+          throw Exception('Failed to update exam');
+        }
+      } else {
+        // Create new exam
+        examData['total_questions'] = 0;
+        final examId = await _examService.createExam(examData);
+
+        if (examId != null && mounted) {
+          // Navigate to add questions screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AddQuestionsScreen(examId: examId),
+            ),
+          ).then((_) => context.pop());
+        } else if (mounted) {
+          throw Exception('Failed to create exam');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -118,7 +146,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Create New Exam',
+          widget.exam != null ? 'Edit Exam' : 'Create New Exam',
           style: TextStyle(color: isDark ? Colors.white : AppTheme.textDark),
         ),
       ),
@@ -280,7 +308,7 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _loading ? null : _createExam,
+                      onPressed: _loading ? null : _saveExam,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF7C7CFF),
                         shape: RoundedRectangleBorder(
@@ -296,9 +324,9 @@ class _CreateExamScreenState extends State<CreateExamScreen> {
                                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
-                          : const Text(
-                              'Next: Add Questions',
-                              style: TextStyle(
+                          : Text(
+                              widget.exam != null ? 'Update Exam' : 'Next: Add Questions',
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,

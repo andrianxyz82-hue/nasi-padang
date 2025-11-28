@@ -161,6 +161,23 @@ class MainActivity: FlutterActivity() {
                         result.error("ERROR", e.message, null)
                     }
                 }
+                "isLockTaskModeActive" -> {
+                    try {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                            val lockTaskMode = activityManager.lockTaskModeState
+                            val isActive = lockTaskMode != ActivityManager.LOCK_TASK_MODE_NONE
+                            result.success(isActive)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+                            val isActive = activityManager.isInLockTaskMode
+                            result.success(isActive)
+                        }
+                    } catch (e: Exception) {
+                        result.error("ERROR", e.message, null)
+                    }
+                }
                 else -> {
                     result.notImplemented()
                 }

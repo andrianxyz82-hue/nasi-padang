@@ -320,6 +320,21 @@ class ExamService {
     }
   }
 
+  // Update exam
+  Future<bool> updateExam(String examId, Map<String, dynamic> data) async {
+    try {
+      await _supabase
+          .from('exams')
+          .update(data)
+          .eq('id', examId);
+      
+      return true;
+    } catch (e) {
+      print('Error updating exam: $e');
+      return false;
+    }
+  }
+
   // Delete exam
   Future<bool> deleteExam(String examId) async {
     try {

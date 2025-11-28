@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../core/app_theme.dart';
 import '../../services/course_service.dart';
 import 'course_detail_screen.dart';
+import '../../core/widgets/neon_background_painter.dart';
 
 class CoursesScreen extends StatefulWidget {
   const CoursesScreen({super.key});
@@ -14,11 +16,26 @@ class _CoursesScreenState extends State<CoursesScreen> {
   final _courseService = CourseService();
   List<Map<String, dynamic>> _enrollments = [];
   bool _loading = true;
+  final List<NeonDot> _neonDots = [];
 
   @override
   void initState() {
     super.initState();
+    _generateNeonDots();
     _loadCourses();
+  }
+
+  void _generateNeonDots() {
+    final random = math.Random();
+    for (int i = 0; i < 15; i++) {
+      _neonDots.add(NeonDot(
+        x: random.nextDouble(),
+        y: random.nextDouble() * 0.5, // Top half
+        radius: random.nextDouble() * 4 + 1,
+        color: i % 2 == 0 ? const Color(0xFFB042FF) : const Color(0xFF42E0FF),
+        opacity: random.nextDouble() * 0.5,
+      ));
+    }
   }
 
   Future<void> _loadCourses() async {
@@ -41,41 +58,58 @@ class _CoursesScreenState extends State<CoursesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text('My Courses', style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppTheme.textDark)),
-        actions: [
-          IconButton(
-            onPressed: _loadCourses,
-            icon: Icon(Icons.refresh, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : AppTheme.textDark),
+      backgroundColor: const Color(0xFF1d1d2b),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: NeonBackgroundPainter(dots: _neonDots),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  title: const Text('My Courses', style: TextStyle(color: Colors.white)),
+                  actions: [
+                    IconButton(
+                      onPressed: _loadCourses,
+                      icon: const Icon(Icons.refresh, color: Colors.white),
+                    ),
+                  ],
+                ),
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _enrollments.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.school_outlined, size: 64, color: Colors.grey),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No courses enrolled yet',
+                                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(20),
+                              itemCount: _enrollments.length,
+                              itemBuilder: (context, index) {
+                                return _buildCourseCard(context, _enrollments[index]);
+                              },
+                            ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _enrollments.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.school_outlined, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No courses enrolled yet',
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _enrollments.length,
-                  itemBuilder: (context, index) {
-                    return _buildCourseCard(context, _enrollments[index]);
-                  },
-                ),
     );
   }
 

@@ -27,21 +27,35 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
   bool _submitting = false;
   
   Timer? _timer;
+  Timer? _lockCheckTimer;
   int _remainingSeconds = 0;
+  bool _isLocked = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _enableLockMode();
+    _startLockCheck();
     _loadExam();
+  }
+
+  void _startLockCheck() {
+    _lockCheckTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      final isLocked = await _lockService.isLockModeActive();
+      if (mounted && isLocked != _isLocked) {
+        setState(() => _isLocked = isLocked);
+      }
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _disableLockMode();
+    _disableLockMode();
     _timer?.cancel();
+    _lockCheckTimer?.cancel();
     super.dispose();
   }
 
@@ -191,6 +205,48 @@ class _TakeExamScreenState extends State<TakeExamScreen> with WidgetsBindingObse
       return Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (!_isLocked) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.lock_person, size: 80, color: Colors.red),
+                const SizedBox(height: 24),
+                const Text(
+                  'Exam Locked',
+                  style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'You must enable "Screen Pinning" to take this exam. Please accept the permission request.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 16),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: _enableLockMode,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7C7CFF),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text('Enable Lock Mode'),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Exit Exam', style: TextStyle(color: Colors.red)),
+                ),
+              ],
+            ),
+          ),
+        ),
       );
     }
 

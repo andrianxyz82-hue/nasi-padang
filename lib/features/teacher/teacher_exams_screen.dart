@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../core/app_theme.dart';
 import '../../services/exam_service.dart';
 import 'create_exam_screen.dart';
+import '../../core/widgets/neon_background_painter.dart';
 
 class TeacherExamsScreen extends StatefulWidget {
   const TeacherExamsScreen({super.key});
@@ -14,11 +16,26 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
   final _examService = ExamService();
   List<Map<String, dynamic>> _exams = [];
   bool _loading = true;
+  final List<NeonDot> _neonDots = [];
 
   @override
   void initState() {
     super.initState();
+    _generateNeonDots();
     _loadExams();
+  }
+
+  void _generateNeonDots() {
+    final random = math.Random();
+    for (int i = 0; i < 15; i++) {
+      _neonDots.add(NeonDot(
+        x: random.nextDouble(),
+        y: random.nextDouble() * 0.5, // Top half
+        radius: random.nextDouble() * 4 + 1,
+        color: i % 2 == 0 ? const Color(0xFFB042FF) : const Color(0xFF42E0FF),
+        opacity: random.nextDouble() * 0.5,
+      ));
+    }
   }
 
   Future<void> _loadExams() async {
@@ -75,77 +92,88 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Exams',
-          style: TextStyle(color: isDark ? Colors.white : AppTheme.textDark),
-        ),
-      ),
-      body: Column(
+      backgroundColor: const Color(0xFF1d1d2b),
+      body: Stack(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: NeonBackgroundPainter(dots: _neonDots),
+            ),
+          ),
+          SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Create Exam Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CreateExamScreen(),
-                      ),
-                    ).then((_) => _loadExams());
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('Create New Exam'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  title: Text(
+                    'Exams',
+                    style: TextStyle(color: isDark ? Colors.white : AppTheme.textDark),
                   ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Create Exam Button
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CreateExamScreen(),
+                            ),
+                          ).then((_) => _loadExams());
+                        },
+                        icon: const Icon(Icons.add_circle_outline),
+                        label: const Text('Create New Exam'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Exams List
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _exams.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'No exams yet',
+                                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Create your first exam',
+                                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              itemCount: _exams.length,
+                              itemBuilder: (context, index) {
+                                final exam = _exams[index];
+                                return _buildExamCard(exam, isDark);
+                              },
+                            ),
                 ),
               ],
             ),
-          ),
-
-          // Exams List
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _exams.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No exams yet',
-                              style: TextStyle(color: Colors.grey, fontSize: 16),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Create your first exam',
-                              style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                            ),
-                          ],
-                        ),
-                      )
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        itemCount: _exams.length,
-                        itemBuilder: (context, index) {
-                          final exam = _exams[index];
-                          return _buildExamCard(exam, isDark);
-                        },
-                      ),
           ),
         ],
       ),
@@ -220,9 +248,12 @@ class _TeacherExamsScreenState extends State<TeacherExamsScreen> {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Edit feature coming soon')),
-                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CreateExamScreen(exam: exam),
+                      ),
+                    ).then((_) => _loadExams());
                   },
                   icon: const Icon(Icons.edit, size: 18),
                   label: const Text('Edit'),

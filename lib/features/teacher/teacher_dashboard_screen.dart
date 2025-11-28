@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import '../../core/app_theme.dart';
 import '../../services/course_service.dart';
 import '../../services/exam_service.dart';
+import '../../core/widgets/neon_background_painter.dart';
 
 class TeacherDashboardScreen extends StatefulWidget {
   const TeacherDashboardScreen({super.key});
@@ -17,11 +19,26 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   int _totalCourses = 0;
   int _totalExams = 0;
   bool _loading = true;
+  final List<NeonDot> _neonDots = [];
 
   @override
   void initState() {
     super.initState();
+    _generateNeonDots();
     _loadStats();
+  }
+
+  void _generateNeonDots() {
+    final random = math.Random();
+    for (int i = 0; i < 15; i++) {
+      _neonDots.add(NeonDot(
+        x: random.nextDouble(),
+        y: random.nextDouble() * 0.5, // Top half
+        radius: random.nextDouble() * 4 + 1,
+        color: i % 2 == 0 ? const Color(0xFFB042FF) : const Color(0xFF42E0FF),
+        opacity: random.nextDouble() * 0.5,
+      ));
+    }
   }
 
   Future<void> _loadStats() async {
@@ -42,104 +59,113 @@ class _TeacherDashboardScreenState extends State<TeacherDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1E1E2C),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: const Color(0xFF1d1d2b),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: NeonBackgroundPainter(dots: _neonDots),
+            ),
+          ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  // Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'Teacher Dashboard',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Teacher Dashboard',
+                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Manage your classes',
+                            style: TextStyle(
+                              color: Colors.grey,
                             ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        'Manage your classes',
-                        style: TextStyle(
-                          color: Colors.grey,
+                      IconButton(
+                        onPressed: _loadStats,
+                        icon: const Icon(Icons.refresh, color: Colors.white),
+                        style: IconButton.styleFrom(
+                          backgroundColor: const Color(0xFF2D2D44),
+                          padding: const EdgeInsets.all(12),
                         ),
                       ),
                     ],
                   ),
-                  IconButton(
-                    onPressed: _loadStats,
-                    icon: const Icon(Icons.refresh, color: Colors.white),
-                    style: IconButton.styleFrom(
-                      backgroundColor: const Color(0xFF2D2D44),
-                      padding: const EdgeInsets.all(12),
-                    ),
+                  const SizedBox(height: 24),
+
+                  // Stats Cards
+                  _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Courses',
+                                _totalCourses.toString(),
+                                Icons.book_outlined,
+                                const Color(0xFF7C7CFF),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Exams',
+                                _totalExams.toString(),
+                                Icons.quiz_outlined,
+                                Colors.blue,
+                              ),
+                            ),
+                          ],
+                        ),
+                  const SizedBox(height: 24),
+
+                  // Recent Activity
+                  Text(
+                    'Recent Activity',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildActivityItem(
+                    'Mathematics Final Exam',
+                    '45 students completed',
+                    Icons.check_circle_outline,
+                    Colors.green,
+                  ),
+                  _buildActivityItem(
+                    'Physics Chapter 5 Material',
+                    'Uploaded 2 hours ago',
+                    Icons.upload_file,
+                    AppTheme.primaryPurple,
+                  ),
+                  _buildActivityItem(
+                    'English Literature Quiz',
+                    'Scheduled for tomorrow',
+                    Icons.schedule,
+                    const Color(0xFFFFB84D),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-
-              // Stats Cards
-              _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Row(
-                      children: [
-                        Expanded(
-                          child: _buildStatCard(
-                            'Courses',
-                            _totalCourses.toString(),
-                            Icons.book_outlined,
-                            const Color(0xFF7C7CFF),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildStatCard(
-                            'Exams',
-                            _totalExams.toString(),
-                            Icons.quiz_outlined,
-                            Colors.blue,
-                          ),
-                        ),
-                      ],
-                    ),
-              const SizedBox(height: 24),
-
-              // Recent Activity
-              Text(
-                'Recent Activity',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-              ),
-              const SizedBox(height: 16),
-              _buildActivityItem(
-                'Mathematics Final Exam',
-                '45 students completed',
-                Icons.check_circle_outline,
-                Colors.green,
-              ),
-              _buildActivityItem(
-                'Physics Chapter 5 Material',
-                'Uploaded 2 hours ago',
-                Icons.upload_file,
-                AppTheme.primaryPurple,
-              ),
-              _buildActivityItem(
-                'English Literature Quiz',
-                'Scheduled for tomorrow',
-                Icons.schedule,
-                const Color(0xFFFFB84D),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

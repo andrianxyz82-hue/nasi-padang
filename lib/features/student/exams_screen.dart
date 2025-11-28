@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:go_router/go_router.dart';
 import '../../core/app_theme.dart';
 import '../../services/exam_service.dart';
 import '../exam/take_exam_screen.dart';
+import '../../core/widgets/neon_background_painter.dart';
 
 class ExamsScreen extends StatefulWidget {
   const ExamsScreen({super.key});
@@ -15,11 +17,26 @@ class _ExamsScreenState extends State<ExamsScreen> {
   final _examService = ExamService();
   List<Map<String, dynamic>> _exams = [];
   bool _loading = true;
+  final List<NeonDot> _neonDots = [];
 
   @override
   void initState() {
     super.initState();
+    _generateNeonDots();
     _loadExams();
+  }
+
+  void _generateNeonDots() {
+    final random = math.Random();
+    for (int i = 0; i < 15; i++) {
+      _neonDots.add(NeonDot(
+        x: random.nextDouble(),
+        y: random.nextDouble() * 0.5, // Top half
+        radius: random.nextDouble() * 4 + 1,
+        color: i % 2 == 0 ? const Color(0xFFB042FF) : const Color(0xFF42E0FF),
+        opacity: random.nextDouble() * 0.5,
+      ));
+    }
   }
 
   Future<void> _loadExams() async {
@@ -39,38 +56,55 @@ class _ExamsScreenState extends State<ExamsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        title: Text(
-          'Available Exams',
-          style: TextStyle(color: isDark ? Colors.white : AppTheme.textDark),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _exams.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No exams available',
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
-                      ),
-                    ],
+      backgroundColor: const Color(0xFF1d1d2b),
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: NeonBackgroundPainter(dots: _neonDots),
+            ),
+          ),
+          SafeArea(
+            child: Column(
+              children: [
+                AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  title: const Text(
+                    'Available Exams',
+                    style: TextStyle(color: Colors.white),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _exams.length,
-                  itemBuilder: (context, index) {
-                    return _buildExamCard(context, _exams[index], isDark);
-                  },
                 ),
+                Expanded(
+                  child: _loading
+                      ? const Center(child: CircularProgressIndicator())
+                      : _exams.isEmpty
+                          ? const Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.quiz_outlined, size: 64, color: Colors.grey),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'No exams available',
+                                    style: TextStyle(color: Colors.grey, fontSize: 16),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(20),
+                              itemCount: _exams.length,
+                              itemBuilder: (context, index) {
+                                return _buildExamCard(context, _exams[index], isDark);
+                              },
+                            ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

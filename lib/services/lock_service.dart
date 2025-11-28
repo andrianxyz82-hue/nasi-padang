@@ -42,4 +42,14 @@ class LockService {
       return false;
     }
   }
+
+  Future<bool> isLockModeActive() async {
+    try {
+      final bool result = await _channel.invokeMethod('isLockTaskModeActive');
+      return result;
+    } on PlatformException catch (e) {
+      print("Failed to check lock mode status: '${e.message}'.");
+      return false;
+    }
+  }
 }
