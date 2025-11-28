@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -10,7 +9,6 @@ android {
     compileSdk = flutter.compileSdkVersion
 
     compileOptions {
-        // Required for flutter_local_notifications (Java 8+)
         coreLibraryDesugaringEnabled true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -36,7 +34,7 @@ android {
 }
 
 dependencies {
-    // Required for desugaring support
+    // Paste dependency-nya DI SINI
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
